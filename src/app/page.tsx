@@ -113,7 +113,6 @@ export default function AudioVisualizer() {
     setIsListening(false);
     setAudioSource(null);
     setAudioLevel(0);
-    setFrequencyData([]);
     
     if (frameRef.current) {
       cancelAnimationFrame(frameRef.current);
@@ -179,7 +178,6 @@ export default function AudioVisualizer() {
     setIsPlaying(false);
     setAudioSource(null);
     setAudioLevel(0);
-    setFrequencyData([]);
     
     if (frameRef.current) {
       cancelAnimationFrame(frameRef.current);
@@ -292,7 +290,10 @@ export default function AudioVisualizer() {
             <Music size={24} className="text-emerald-500" />
             Creek
           </CardTitle>
-          <Badge variant="outline">Audio Visualizer</Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline">Audio Visualizer</Badge>
+            <ThemeToggle />
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-6">
           {/* Track Selection */}
