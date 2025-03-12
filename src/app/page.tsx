@@ -55,10 +55,9 @@ export default function AudioVisualizer() {
   
   const sampleAudioUrl = audioTracks[selectedTrack].path;
 
-  // Initialize audio context
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Fix the AudioContext declaration
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
