@@ -1,8 +1,22 @@
+# Voice Activity Indicator
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Features
+
+- Audio visualization component that responds to microphone input or audio playback
+- Real-time visualization of audio levels
+- Support for multiple audio tracks
+- Responsive design using shadcn/ui components
 
 ## Getting Started
 
-First, run the development server:
+First, place your audio files in the `/public/audio` directory:
+- gardens.mp3
+- kugelsicher.mp3
+- spinning-head.mp3
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -16,9 +30,15 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Visit [http://localhost:3000/audio](http://localhost:3000/audio) to see the audio visualizer.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Dependencies
+
+This project uses:
+- Next.js for the React framework
+- shadcn/ui for the component library
+- motion for animations
+- Web Audio API for audio processing
 
 ## Learn More
 
