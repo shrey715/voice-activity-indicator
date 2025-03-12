@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/toggle';
 
-// Define track ID type to ensure type safety
 type TrackId = 'gardens' | 'kugelsicher' | 'spinningHead';
 type AudioSourceType = 'microphone' | 'playback' | null;
 
@@ -28,7 +27,6 @@ export default function AudioVisualizer() {
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const prevLevelRef = useRef<number>(0);
   
-  // Audio tracks with proper typing
   const audioTracks = {
     gardens: {
       name: "Gardens",
@@ -78,23 +76,19 @@ export default function AudioVisualizer() {
     }
   }, []);
 
-  // Function to start microphone listening
   const startMicrophone = async () => {
     try {
       if (isPlaying) {
         stopAudio();
       }
       
-      // Resume audio context if suspended
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
-      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       micStreamRef.current = stream;
       
-      // Connect microphone to audio analyzer
       if (audioContextRef.current && analyserRef.current) {
         const source = audioContextRef.current.createMediaStreamSource(stream);
         source.connect(analyserRef.current);
@@ -103,7 +97,6 @@ export default function AudioVisualizer() {
       setIsListening(true);
       setAudioSource('microphone');
       
-      // Start analyzing audio
       analyzeAudio();
     } catch (error) {
       console.error("Error accessing microphone:", error);
@@ -111,7 +104,6 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Function to stop microphone listening
   const stopMicrophone = () => {
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach(track => track.stop());
@@ -128,7 +120,6 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Function to play audio file
   const playAudio = async () => {
     if (isListening) {
       stopMicrophone();
@@ -136,7 +127,6 @@ export default function AudioVisualizer() {
     
     setIsLoading(true);
     
-    // Resume audio context if it's suspended (needed for browser autoplay policies)
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
@@ -156,21 +146,18 @@ export default function AudioVisualizer() {
       setIsLoading(false);
     });
     
-    // Create a source node for the audio element
     if (audioContextRef.current && analyserRef.current && audioElementRef.current) {
       sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioElementRef.current);
       sourceNodeRef.current.connect(analyserRef.current);
       analyserRef.current.connect(audioContextRef.current.destination);
     }
     
-    // Play the audio
     try {
       if (audioElementRef.current) {
         await audioElementRef.current.play();
         setIsPlaying(true);
         setAudioSource('playback');
         
-        // Start analyzing audio
         analyzeAudio();
       }
     } catch (error) {
@@ -180,7 +167,6 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Function to stop audio playback
   const stopAudio = () => {
     if (audioElementRef.current) {
       audioElementRef.current.pause();
@@ -197,7 +183,6 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Function to analyze audio and update the indicator
   const analyzeAudio = () => {
     if (!analyserRef.current) return;
     
@@ -209,13 +194,10 @@ export default function AudioVisualizer() {
       
       analyserRef.current.getByteFrequencyData(dataArray);
       
-      // Calculate average volume level with emphasis on speech frequencies
       let sum = 0;
       let count = 0;
       
       for (let i = 0; i < frequencyBinCount; i++) {
-        // Calculate weighted average with emphasis on mid-range frequencies
-        // which are more relevant for speech
         const weight = i < frequencyBinCount / 2 ? 1.5 : 0.8;
         sum += dataArray[i] * weight;
         count++;
@@ -223,9 +205,8 @@ export default function AudioVisualizer() {
       
       const average = sum / count;
       
-      // Smooth transitions with interpolation
       const targetLevel = Math.min(Math.pow(average / 128, 1.8), 1);
-      const smoothingFactor = 0.15; // Lower for smoother transitions
+      const smoothingFactor = 0.15; 
       const interpolatedLevel = prevLevelRef.current + 
         (targetLevel - prevLevelRef.current) * smoothingFactor;
       
@@ -238,7 +219,6 @@ export default function AudioVisualizer() {
     updateLevel();
   };
 
-  // Function to select a track
   const selectTrack = (trackId: TrackId) => {
     if (isPlaying) {
       stopAudio();
@@ -246,7 +226,6 @@ export default function AudioVisualizer() {
     setSelectedTrack(trackId);
   };
 
-  // Handle toggling microphone
   const handleMicToggle = () => {
     if (isListening) {
       stopMicrophone();
@@ -255,7 +234,6 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Handle toggling audio playback
   const handlePlayToggle = () => {
     if (isPlaying) {
       stopAudio();
@@ -264,35 +242,30 @@ export default function AudioVisualizer() {
     }
   };
 
-  // Calculate indicator size based on audio level
-  const baseSize = 120; // Base size in pixels
-  const maxExpansion = 80; // Maximum expansion in pixels
+  const baseSize = 120; 
+  const maxExpansion = 80; 
   const currentSize = baseSize + (audioLevel * maxExpansion);
 
-  // Color transition based on audio level and selected track
   const getIndicatorColor = () => {
     const baseColor = audioTracks[selectedTrack].color;
     return baseColor;
   };
 
-  // Get box shadow color based on track and intensity
   const getBoxShadowColor = (trackId: TrackId, opacity = 0.4) => {
     const opacityValue = opacity.toFixed(2);
     switch (trackId) {
       case 'gardens':
-        return `rgba(16, 185, 129, ${opacityValue})`;  // emerald shadow
+        return `rgba(16, 185, 129, ${opacityValue})`;
       case 'kugelsicher':
-        return `rgba(139, 92, 246, ${opacityValue})`;  // violet shadow
+        return `rgba(139, 92, 246, ${opacityValue})`; 
       case 'spinningHead':
-        return `rgba(245, 158, 11, ${opacityValue})`;  // amber shadow
+        return `rgba(245, 158, 11, ${opacityValue})`; 
       default:
-        return `rgba(129, 140, 248, ${opacityValue})`; // default indigo shadow
+        return `rgba(129, 140, 248, ${opacityValue})`; 
     }
   };
 
-  // Calculate glow intensity based on audio level
   const getGlowIntensity = () => {
-    // Scale from 0.2 to 1 based on audio level
     return 0.2 + (audioLevel * 0.8);
   };
 
