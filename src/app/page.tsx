@@ -2,29 +2,33 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Play, Mic, X, Volume2, Loader2, Music } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/toggle';
 
+// Define track ID type to ensure type safety
+type TrackId = 'gardens' | 'kugelsicher' | 'spinningHead';
+type AudioSourceType = 'microphone' | 'playback' | null;
+
 export default function AudioVisualizer() {
   const [isListening, setIsListening] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [audioSource, setAudioSource] = useState(null);
-  const [selectedTrack, setSelectedTrack] = useState('gardens');
+  const [audioSource, setAudioSource] = useState<AudioSourceType>(null);
+  const [selectedTrack, setSelectedTrack] = useState<TrackId>('gardens');
   const [isLoading, setIsLoading] = useState(false);
   
-  const micStreamRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
-  const audioElementRef = useRef(null);
-  const frameRef = useRef(null);
-  const sourceNodeRef = useRef(null);
-  const prevLevelRef = useRef(0);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const prevLevelRef = useRef<number>(0);
   
-  // Audio tracks
+  // Audio tracks with proper typing
   const audioTracks = {
     gardens: {
       name: "Gardens",
@@ -54,14 +58,17 @@ export default function AudioVisualizer() {
   // Initialize audio context
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      // Fix the AudioContext declaration
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
       analyserRef.current.smoothingTimeConstant = 0.7;
       
       return () => {
-        cancelAnimationFrame(frameRef.current);
+        if (frameRef.current) {
+          cancelAnimationFrame(frameRef.current);
+        }
         if (micStreamRef.current) {
           micStreamRef.current.getTracks().forEach(track => track.stop());
         }
@@ -80,7 +87,7 @@ export default function AudioVisualizer() {
       }
       
       // Resume audio context if suspended
-      if (audioContextRef.current.state === 'suspended') {
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
@@ -89,8 +96,10 @@ export default function AudioVisualizer() {
       micStreamRef.current = stream;
       
       // Connect microphone to audio analyzer
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
+      if (audioContextRef.current && analyserRef.current) {
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+      }
       
       setIsListening(true);
       setAudioSource('microphone');
@@ -129,7 +138,7 @@ export default function AudioVisualizer() {
     setIsLoading(true);
     
     // Resume audio context if it's suspended (needed for browser autoplay policies)
-    if (audioContextRef.current.state === 'suspended') {
+    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       await audioContextRef.current.resume();
     }
     
@@ -149,18 +158,22 @@ export default function AudioVisualizer() {
     });
     
     // Create a source node for the audio element
-    sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioElementRef.current);
-    sourceNodeRef.current.connect(analyserRef.current);
-    analyserRef.current.connect(audioContextRef.current.destination);
+    if (audioContextRef.current && analyserRef.current && audioElementRef.current) {
+      sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioElementRef.current);
+      sourceNodeRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(audioContextRef.current.destination);
+    }
     
     // Play the audio
     try {
-      await audioElementRef.current.play();
-      setIsPlaying(true);
-      setAudioSource('playback');
-      
-      // Start analyzing audio
-      analyzeAudio();
+      if (audioElementRef.current) {
+        await audioElementRef.current.play();
+        setIsPlaying(true);
+        setAudioSource('playback');
+        
+        // Start analyzing audio
+        analyzeAudio();
+      }
     } catch (error) {
       console.error("Error playing audio:", error);
       setIsLoading(false);
@@ -193,6 +206,8 @@ export default function AudioVisualizer() {
     const dataArray = new Uint8Array(frequencyBinCount);
     
     const updateLevel = () => {
+      if (!analyserRef.current) return;
+      
       analyserRef.current.getByteFrequencyData(dataArray);
       
       // Calculate average volume level with emphasis on speech frequencies
@@ -225,7 +240,7 @@ export default function AudioVisualizer() {
   };
 
   // Function to select a track
-  const selectTrack = (trackId) => {
+  const selectTrack = (trackId: TrackId) => {
     if (isPlaying) {
       stopAudio();
     }
@@ -262,7 +277,7 @@ export default function AudioVisualizer() {
   };
 
   // Get box shadow color based on track and intensity
-  const getBoxShadowColor = (trackId, opacity = 0.4) => {
+  const getBoxShadowColor = (trackId: TrackId, opacity = 0.4) => {
     const opacityValue = opacity.toFixed(2);
     switch (trackId) {
       case 'gardens':
@@ -298,7 +313,7 @@ export default function AudioVisualizer() {
         <CardContent className="flex flex-col items-center space-y-6">
           {/* Track Selection */}
           <div className="w-full grid grid-cols-3 gap-2">
-            {Object.entries(audioTracks).map(([id, track]) => (
+            {(Object.entries(audioTracks) as [TrackId, typeof audioTracks[TrackId]][]).map(([id, track]) => (
               <Button
                 key={id}
                 onClick={() => selectTrack(id)}
